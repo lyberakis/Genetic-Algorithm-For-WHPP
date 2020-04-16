@@ -2,6 +2,9 @@ package main;
 
 import java.util.ArrayList;
 import java.util.Random;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 
 public class Functions {
 	
@@ -18,23 +21,29 @@ public class Functions {
 		return goodChromos;
 	}
 	
-	public Chromosome rouletteWheelSelection (ArrayList<Chromosome> goodChromos) {//roulette-like selection with different weight for every child
-		int sum=0;
+	public Chromosome rouletteWheelSelection (ArrayList<Chromosome> goodChromos, int psel) {
 		Chromosome luckyChromo = new Chromosome();
 		
-		for (int i=0; i<goodChromos.size(); i++)
-			sum = sum + goodChromos.get(i).getEvaluation();
-		
-		int spin = new Random().nextInt(sum)+1;
-		
-		sum=0;
-		for (int i=0; i<goodChromos.size(); i++) {
-			sum = sum + goodChromos.get(i).getEvaluation();
-			if (spin<=sum) {
-				luckyChromo = goodChromos.get(i);
-				break;
+		if (psel==2) {//roulette-like selection with different weight for every chromosome
+			int sum=0;
+					
+			for (int i=0; i<goodChromos.size(); i++)
+				sum = sum + goodChromos.get(i).getEvaluation();
+			
+			int spin = new Random().nextInt(sum)+1;
+			
+			sum=0;
+			for (int i=0; i<goodChromos.size(); i++) {
+				sum = sum + goodChromos.get(i).getEvaluation();
+				if (spin<=sum) {
+					luckyChromo = goodChromos.get(i);
+					break;
+				}
+					
 			}
-				
+		}else {//roulette-like selection with equal weight for every chromosome
+			int spin = new Random().nextInt(goodChromos.size());
+			luckyChromo = goodChromos.get(spin);			
 		}
 		return luckyChromo;
 	}
@@ -117,19 +126,31 @@ public class Functions {
 		int[] shifts2 = new int[childChromos.get(0).numOfDays];
 		
 		for (int i=0; i<childChromos.size(); i++) {
+			ArrayList<Employee> employees = new ArrayList<Employee>();
+			Chromosome mutChromo = new Chromosome();
 			randEmp1 = new Random().nextInt(childChromos.get(i).numOfEmployees);
 			randShift1 = new Random().nextInt(childChromos.get(i).numOfDays);			
-			shifts1 = childChromos.get(i).getEmployees().get(randEmp1).getShift();
+			shifts1 = childChromos.get(i).getEmployees().get(randEmp1).getShift().clone();
 			holdShift = shifts1[randShift1];
 			
 			randEmp2 = new Random().nextInt(childChromos.get(i).numOfEmployees);
 			randShift2 = new Random().nextInt(childChromos.get(i).numOfDays);
-			shifts2 = childChromos.get(i).getEmployees().get(randEmp2).getShift();
+			shifts2 = childChromos.get(i).getEmployees().get(randEmp2).getShift().clone();
 			
 			shifts1[randShift1]=shifts2[randShift2];
 			shifts2[randShift2]=holdShift;
+			for (int j=0; j<childChromos.get(i).numOfEmployees; j++) {
+				employees.add(new Employee());
+				if (j==randEmp1)
+					employees.get(j).setShift(shifts1);
+				else if (j==randEmp2)
+					employees.get(j).setShift(shifts2);
+				else
+					employees.get(j).setShift(childChromos.get(i).getEmployees().get(j).getShift().clone());
+			}
 			
-			mutatedChromos.add(childChromos.get(i));
+			mutChromo.setEmployees(employees);
+			mutatedChromos.add(mutChromo);
 		}
 		
 		return mutatedChromos;
@@ -141,6 +162,8 @@ public class Functions {
 		int[] shifts = new int[childChromos.get(0).numOfDays];
 		
 		for (int i=0; i<childChromos.size(); i++) {
+			ArrayList<Employee> employees = new ArrayList<Employee>();
+			Chromosome mutChromo = new Chromosome();
 			randEmp = new Random().nextInt(childChromos.get(i).numOfEmployees);
 			randShift = new Random().nextInt(childChromos.get(i).numOfDays-1);
 			randLength = new Random().nextInt(childChromos.get(i).numOfDays-randShift);
@@ -148,7 +171,7 @@ public class Functions {
 				randLength++;
 			
 			inversionPoint = randShift+randLength;
-			shifts = childChromos.get(i).getEmployees().get(randEmp).getShift();
+			shifts = childChromos.get(i).getEmployees().get(randEmp).getShift().clone();
 
 			while (randShift<inversionPoint) {
 				holder=shifts[randShift];
@@ -157,8 +180,67 @@ public class Functions {
 				randShift++;
 				inversionPoint--;
 			}
+			for (int j=0; j<childChromos.get(i).numOfEmployees; j++) {
+				employees.add(new Employee());
+				if (j==randEmp)
+					employees.get(j).setShift(shifts);
+				else
+					employees.get(j).setShift(childChromos.get(i).getEmployees().get(j).getShift().clone());
+			}
+			
+			mutChromo.setEmployees(employees);
+			mutatedChromos.add(mutChromo);
 		}
 		
 		return mutatedChromos;
+	}
+	
+	public boolean checkToEnd (ArrayList<Chromosome> newGeneration) {		
+		for (int i=0; i<newGeneration.size(); i++) {
+			if (newGeneration.get(i).getEvaluation()>5000)
+				return true;
+		}
+		return false;
+	}
+	
+	public void genStats (ArrayList<Chromosome> newGeneration) {
+		int sum=0, bestChromo=0;
+		File myObj = new File("genPop.txt");
+		File myObj1 = new File("average.txt");
+		File myObj2 = new File("bestEv.txt");
+	      try {
+			if(myObj.createNewFile())
+				System.out.print(" ");
+			if(myObj2.createNewFile())
+				System.out.print(" ");
+			if(myObj1.createNewFile())
+				System.out.print(" ");
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	    	    	      
+		System.out.println("------------------ New Generation population: "+newGeneration.size()+" ------------------------");
+		for (int i=0; i<newGeneration.size(); i++) {
+			sum+=newGeneration.get(i).getEvaluation();
+			if (newGeneration.get(i).getEvaluation()>newGeneration.get(bestChromo).getEvaluation())
+				bestChromo=i;
+		}
+		double average=sum/newGeneration.size();
+		System.out.println("Average evaluation: "+average);
+		System.out.println("Best Chromosome evaluation: "+newGeneration.get(bestChromo).getEvaluation());
+		  try {
+				FileWriter myWriter = new FileWriter("genPop.txt", true);
+				FileWriter myWriter1 = new FileWriter("average.txt", true);
+				FileWriter myWriter2 = new FileWriter("bestEv.txt", true);
+				myWriter.write(newGeneration.size()+"\n");
+				myWriter1.write((int)average+"\n");
+				myWriter2.write(newGeneration.get(bestChromo).getEvaluation()+"\n");
+				myWriter.close();
+				myWriter1.close();
+				myWriter2.close();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 	}
 }
