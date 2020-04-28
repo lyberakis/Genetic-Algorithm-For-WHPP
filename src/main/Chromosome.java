@@ -6,13 +6,13 @@ import java.util.Random;
 public class Chromosome {
 	final int numOfEmployees=30, numOfDays=14, numOfShifts=3;
 	ArrayList<Employee> employees = new ArrayList<Employee>();
-	private int evaluation;
+	private double evaluation;
 
-	public int getEvaluation() {
+	public double getEvaluation() {
 		return evaluation;
 	}
 
-	public void setEvaluation(int evaluation) {
+	public void setEvaluation(double evaluation) {
 		this.evaluation = evaluation;
 	}
 	
@@ -142,17 +142,13 @@ public class Chromosome {
 		int hours=0;
 		int[] shifts = new int[numOfDays];
 		this.evaluation=0;
-		boolean constraint1=false, constraint2=false, constraint3=false, constraint4=false, constraint5=false, constraint6=false, constraint7=false; 
-		boolean constraint8=false, constraint9=false, constraint10=false, constraint11=false;
-				
+		correctingHours();		
 		for (int i=0; i<numOfEmployees; i++) {
 			hours = employees.get(i).getHours();
 			shifts = employees.get(i).getShift();
 			
-			if (hours>70 && constraint1==false) {//max 70 hours
+			if (hours>70)//max 70 hours
 				this.evaluation = this.evaluation+1000;
-				constraint1=true;
-			}
 			
 			int countConsecutiveDays=0, countConsecutiveNights=0;
 			for (int j=0; j<numOfDays; j++) {
@@ -160,76 +156,44 @@ public class Chromosome {
 					countConsecutiveDays++;
 				else
 					countConsecutiveDays=0;
-				if (countConsecutiveDays>7 && constraint2==false) {
+				if (countConsecutiveDays>7)
 					this.evaluation = this.evaluation+1000;
-					constraint2=true;
-				}
 										
 				if (shifts[j]==3)//max 4 consecutive nights
 					countConsecutiveNights++;
 				else
 					countConsecutiveNights=0;
-				if (countConsecutiveNights>4 && constraint3==false) {
+				if (countConsecutiveNights>4)
 					this.evaluation = this.evaluation+1000;
-					constraint3=true;
-				}
 				
-				if (j!=numOfDays-1 && constraint4==false) {//avoid night shift and the next day morning shift
-					if (shifts[j]==3 && shifts[j+1]==1) {
-						this.evaluation = this.evaluation+1000;
-						constraint4=true;
-					}
-				}
+				if (j!=numOfDays-1 && shifts[j]==3 && shifts[j+1]==1)//avoid night shift and the next day morning shift
+					this.evaluation = this.evaluation+1000;
 					
-				if (j!=numOfDays-1 && constraint5==false) {//avoid evening shift and the next day morning shift
-					if (shifts[j]==2 && shifts[j+1]==1) {
-						this.evaluation = this.evaluation+800;
-						constraint5=true;
-					}
+				if (j!=numOfDays-1 && shifts[j]==2 && shifts[j+1]==1)//avoid evening shift and the next day morning shift
+					this.evaluation = this.evaluation+800;
+				
+				if (j!=numOfDays-1 && shifts[j]==3 && shifts[j+1]==2)//avoid night shift and the next day evening shift
+					this.evaluation = this.evaluation+800;
+				
+				if (j<numOfDays-5 && shifts[j]==3 && shifts[j+1]==3 && shifts[j+2]==3 && shifts[j+3]==3 && (shifts[j+4]!=0 || shifts[j+5]!=0))
+					this.evaluation = this.evaluation+100;//at least 2 free days after 4 night shifts
+				
+				if (j<numOfDays-8 && shifts[j]!=0 && shifts[j+1]!=0 && shifts[j+2]!=0 && shifts[j+3]!=0 && shifts[j+4]!=0 && shifts[j+5]!=0 && shifts[j+6]!=0 &&
+				   (shifts[j+7]!=0 || shifts[j+8]!=0)) {//at least 2 free days after 7 working days
+					this.evaluation = this.evaluation+100;
 				}
 				
-				if (j!=numOfDays-1 && constraint6==false) {//avoid night shift and the next day evening shift
-					if (shifts[j]==3 && shifts[j+1]==2) {
-						this.evaluation = this.evaluation+800;
-						constraint6=true;
-					}
-				}
-				
-				if (j<numOfDays-5 && constraint7==false) {//at least 2 free days after 4 night shifts
-					if (shifts[j]==3 && shifts[j+1]==3 && shifts[j+2]==3 && shifts[j+3]==3 && (shifts[j+4]!=0 || shifts[j+5]!=0)) {
-						this.evaluation = this.evaluation+100;
-						constraint7=true;
-					}
-				}
-				
-				if (j<numOfDays-8 && constraint8==false) {//at least 2 free days after 7 working days
-					if (shifts[j]!=0 && shifts[j+1]!=0 && shifts[j+2]!=0 && shifts[j+3]!=0 && shifts[j+4]!=0 && shifts[j+5]!=0 && shifts[j+6]!=0 && (shifts[j+7]!=0 || shifts[j+8]!=0)) {
-						this.evaluation = this.evaluation+100;
-						constraint8=true;
-					}
-				}
-				
-				if (j<numOfDays-2 && constraint9==false) {//avoid work-free-work days
-					if (shifts[j]!=0 && shifts[j+1]==0 && shifts[j+2]!=0) {
-						this.evaluation = this.evaluation+1;
-						constraint9=true;
-					}
-				}
-				
-				if (j<numOfDays-2 && constraint10==false) {//avoid free-work-free days
-					if (shifts[j]==0 && shifts[j+1]!=0 && shifts[j+2]==0) {
-						this.evaluation = this.evaluation+1;
-						constraint10=true;
-					}
-				}
-				
-				if (j==numOfDays-1 && (shifts[5]!=0 || shifts[6]!=0) && (shifts[12]!=0 || shifts[13]!=0) && constraint11==false) {//not consecutive weekends
+				if (j<numOfDays-2 && shifts[j]!=0 && shifts[j+1]==0 && shifts[j+2]!=0)//avoid work-free-work days
 					this.evaluation = this.evaluation+1;
-					constraint11=true;
-				}
+				
+				if (j<numOfDays-2 && shifts[j]==0 && shifts[j+1]!=0 && shifts[j+2]==0)//avoid free-work-free days
+					this.evaluation = this.evaluation+1;
+				
+				if (j==numOfDays-1 && (shifts[5]!=0 || shifts[6]!=0) && (shifts[12]!=0 || shifts[13]!=0))//not consecutive weekends
+					this.evaluation = this.evaluation+1;
 			}
 		}
-		this.evaluation = 5803-this.evaluation;//reverse result from the worst being the highest to being the lowest
+		this.evaluation = 10000000/this.evaluation;//reverse result from the worst being the highest to being the lowest
 	}
 	
 	public void correctingHours() {

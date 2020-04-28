@@ -25,12 +25,12 @@ public class Functions {
 		Chromosome luckyChromo = new Chromosome();
 		
 		if (psel==2) {//roulette-like selection with different weight for every chromosome
-			int sum=0;
+			double sum=0;
 					
 			for (int i=0; i<goodChromos.size(); i++)
 				sum = sum + goodChromos.get(i).getEvaluation();
 			
-			int spin = new Random().nextInt(sum)+1;
+			int spin = new Random().nextInt((int)sum)+1;
 			
 			sum=0;
 			for (int i=0; i<goodChromos.size(); i++) {
@@ -67,9 +67,7 @@ public class Functions {
 		Chromosome child2 = new Chromosome();
 		
 		child1.setEmployees(employees1);
-		child2.setEmployees(employees2);			
-		child1.correctingHours();
-		child2.correctingHours();
+		child2.setEmployees(employees2);
 		childChromos.add(child1);
 		childChromos.add(child2);
 		return childChromos;
@@ -111,8 +109,6 @@ public class Functions {
 		
 		child1.setEmployees(employees1);
 		child2.setEmployees(employees2);
-		child1.correctingHours();
-		child2.correctingHours();
 		childChromos.add(child1);
 		childChromos.add(child2);
 
@@ -197,20 +193,19 @@ public class Functions {
 	
 	public boolean checkToEnd (ArrayList<Chromosome> newGeneration) {		
 		for (int i=0; i<newGeneration.size(); i++) {
-			if (newGeneration.get(i).getEvaluation()>5000)
+			if (newGeneration.get(i).getEvaluation()>=1000) {
+				newGeneration.get(i).printChromo();
 				return true;
+			}
 		}
 		return false;
 	}
 	
-	public void genStats (ArrayList<Chromosome> newGeneration) {
+	public void genStats (ArrayList<Chromosome> newGeneration, int k) {
 		int sum=0, bestChromo=0;
-		File myObj = new File("genPop.txt");
-		File myObj1 = new File("average.txt");
-		File myObj2 = new File("bestEv.txt");
+		File myObj1 = new File("average"+k+".txt");
+		File myObj2 = new File("bestEv"+k+".txt");
 	      try {
-			if(myObj.createNewFile())
-				System.out.print(" ");
 			if(myObj2.createNewFile())
 				System.out.print(" ");
 			if(myObj1.createNewFile())
@@ -226,16 +221,13 @@ public class Functions {
 				bestChromo=i;
 		}
 		double average=sum/newGeneration.size();
-		System.out.println("Average evaluation: "+average);
-		System.out.println("Best Chromosome evaluation: "+newGeneration.get(bestChromo).getEvaluation());
+		System.out.println("Average evaluation: "+(int)average);
+		System.out.println("Best Chromosome evaluation: "+(int)newGeneration.get(bestChromo).getEvaluation());
 		  try {
-				FileWriter myWriter = new FileWriter("genPop.txt", true);
-				FileWriter myWriter1 = new FileWriter("average.txt", true);
-				FileWriter myWriter2 = new FileWriter("bestEv.txt", true);
-				myWriter.write(newGeneration.size()+"\n");
+				FileWriter myWriter1 = new FileWriter(myObj1, true);
+				FileWriter myWriter2 = new FileWriter(myObj2, true);
 				myWriter1.write((int)average+"\n");
-				myWriter2.write(newGeneration.get(bestChromo).getEvaluation()+"\n");
-				myWriter.close();
+				myWriter2.write((int)newGeneration.get(bestChromo).getEvaluation()+"\n");
 				myWriter1.close();
 				myWriter2.close();
 			} catch (IOException e) {
